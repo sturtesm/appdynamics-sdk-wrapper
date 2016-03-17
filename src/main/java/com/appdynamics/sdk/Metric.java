@@ -7,18 +7,36 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 public class Metric {
-	String metricName = null;
+	private String metricName = null;
 
 	/** our unsorted observations */
-	ArrayList<Double> unsortedObservations = new ArrayList<Double> ();
+	private ArrayList<Double> unsortedObservations = new ArrayList<Double> ();
+	
+	/** sum of the observations */
+	private long sum = 0;
+	
+	/** the metric floor (min) / max */
+	private long min = Long.MAX_VALUE;
+	private long max = Long.MIN_VALUE;
 
 	/** a sorted primited array */
 	double[] sortedPrimitive;
 
 	boolean unsorted = true;
+	
+	/** a description of the units */
+	private String units = null;
 
-	public Metric(String name) {
+	/**
+	 * Construct a new Metric for observations, the units is a descriptor only and will not
+	 * result in any calculations or transformations.
+	 * 
+	 * @param name
+	 * @param units
+	 */
+	public Metric(String name, String units) {
 		this.metricName = name;
+		this.units = units;
 	}
 
 	/**
@@ -29,7 +47,19 @@ public class Metric {
 	public void addObservation(long observation) {
 		unsortedObservations.add(new Double(observation));
 
+		setMinAndMax(observation);
+		setSum(observation);
+		
 		unsorted = true;
+	}
+
+	private void setSum(long observation) {
+		sum += observation;
+	}
+
+	private void setMinAndMax(long observation) {
+		min = (observation < min) ? observation : min;
+		max = (observation > max) ? observation : max;
 	}
 
 	/**
@@ -150,5 +180,52 @@ public class Metric {
 		p.setData(this.sortedPrimitive);
 
 		return p.evaluate(quantile);
+	}
+
+	public String getMetricName() {
+		return metricName;
+	}
+	
+	/**
+	 * get the avg metric value.
+	 * 
+	 * @return
+	 */
+	public long getAvg() {
+		
+		if (getCount() == 0) {
+			return 0;
+		}
+		
+		return getSum() / getCount();
+	}
+	
+	/**
+	 * get the number of observations we've made
+	 * 
+	 * @return
+	 */
+	public long getCount() {
+		return unsortedObservations.size();
+	}
+
+	public long getSum() {
+		return sum;
+	}
+
+	public long getMin() {
+		return min;
+	}
+
+	public long getMax() {
+		return max;
+	}
+
+	public String getUnits() {
+		return (this.units == null) ? "" : this.units;
+	}
+
+	public void setUnits(String units) {
+		this.units = units;
 	}
 }

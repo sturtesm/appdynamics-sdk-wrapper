@@ -21,7 +21,7 @@ public class SDKWrapperTest {
 
 	@Test (priority=1, invocationCount = 100)
 	public void metricAvgTest() {
-		Metric metric = new Metric("SampleUnitTest/Response_Time_ms");
+		Metric metric = new Metric("SampleUnitTest/Response_Time_ms", null);
 
 		for (int i = 1; i <= 100; i++) {
 			metric.addObservation(i);

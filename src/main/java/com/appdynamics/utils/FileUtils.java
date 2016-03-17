@@ -1,5 +1,6 @@
 package com.appdynamics.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -8,7 +9,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.FileStore;
+import java.nio.charset.Charset;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -23,6 +24,10 @@ import org.apache.log4j.Logger;
 
 
 public class FileUtils {
+
+	/** the source and destination of the report */
+	private Path source = null;
+	private Path destination = null;
 
 	private Logger logger = Logger.getLogger(FileUtils.class);
 
@@ -60,9 +65,11 @@ public class FileUtils {
 	 *
 	 * @param source
 	 * @param target
+	 * @return the destination path where the report will be generated
+	 * 
 	 * @throws Exception
 	 */
-	public void recursivelyCopy(String source, Path destination) throws Exception {
+	public final Path recursivelyCopy(String source, Path destination) throws Exception {
 		Path sourcePath = null;
 
 		if (destination == null) {
@@ -85,6 +92,9 @@ public class FileUtils {
 		final Path finalTarget = destination;
 		final Path finalSource = sourcePath;
 
+		setSource(finalSource);
+		setDestination(finalTarget);
+
 		Files.walkFileTree(finalSource, new SimpleFileVisitor<Path>() {
 
 			private Path currentTarget;
@@ -104,6 +114,8 @@ public class FileUtils {
 		});
 
 		logger.info("Recursively copied " + finalSource + " to " + finalTarget);
+		
+		return finalTarget;
 	}
 
 
@@ -113,39 +125,23 @@ public class FileUtils {
 	 * @param path
 	 * @throws Exception
 	 */
-	private Path getFilesystemPath(String path) throws Exception
+	private Path getFilesystemPath(String path) throws URISyntaxException
 	{
 		File file = new File(path);
 
-		URI rootURI = new URI("file:///");
-		Path rootPath = Paths.get(rootURI);
+		Path rootPath = getRootFilesystemPath(); 
 
 		Path targetPath = rootPath.resolve(file.getAbsolutePath());
 
 		return targetPath;
-
-		//System.out.println(resource);
-		//FileStore dirFileStore = Files.getFileStore(dirPath);
-		//printFileStore(dirFileStore, path);
 	}
 
-	private void printFileStore(FileStore filestore, String path)
-	{
-		try
-		{
-			System.out.println("Name: " + filestore.name());
-			System.out.println("\tPath: " + path);
-			System.out.println("\tSize: " + filestore.getTotalSpace());
-			System.out.println("\tUnallocated: " + filestore.getUnallocatedSpace());
-			System.out.println("\tUsable: " + filestore.getUsableSpace());
-			System.out.println("\tType: " + filestore.type());
-		}
-		catch (IOException ioe)
-		{
-			ioe.printStackTrace();
-		}
+	private Path getRootFilesystemPath() throws URISyntaxException {
+		URI rootURI = new URI("file:///");
+		Path rootPath = Paths.get(rootURI);
+		
+		return rootPath;
 	}
-
 
 	/**
 	 * Export a resource embedded into a Jar file to the local file path.
@@ -181,6 +177,62 @@ public class FileUtils {
 		}
 
 		return jarFolder + resourceName;
+	}
+	
+	/**
+	 * read the report template and internalize it as a string.
+	 * 
+	 * @param targetPath the base path to the report
+	 *  
+	 * @return
+	 * @throws URISyntaxException 
+	 * @throws IOException 
+	 */
+	public String readFile(Path parentPath, String fileName) throws URISyntaxException, IOException {
+	
+		String templateFile = parentPath.toFile().getAbsolutePath() + File.separator + fileName;
+		
+		Path absoluteTemplatePath = getRootFilesystemPath().resolve(templateFile);
+		
+		if (absoluteTemplatePath == null) {
+			logger.error("Error creating unit test report, could not resolve the "
+					+ "report template (" + fileName + ") from " + parentPath.toAbsolutePath());
+			
+			return null;
+		}
+		
+        BufferedReader reader = Files.newBufferedReader(absoluteTemplatePath, Charset.defaultCharset());
+        StringBuilder content = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            content.append(line);
+        }
+        reader.close();
+        
+        return content.toString();
+	}
+
+	public Path getSource() {
+		return source;
+	}
+
+	public void setSource(Path source) {
+		this.source = source;
+	}
+
+	public Path getDestination() {
+		return destination;
+	}
+
+	public void setDestination(Path destination) {
+		this.destination = destination;
+	}
+
+	public void writeReport(Path baseDestination, String reportName, String contents) throws IOException {
+		File parent = baseDestination.toFile();
+		File report = new File(parent, reportName);
+		
+		Files.write(Paths.get(report.toURI()), contents.getBytes());
 	}
 }
 
