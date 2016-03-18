@@ -29,7 +29,7 @@ public class ReportGeneratorTest {
 	@AfterTest
 	public void generateTestReport() throws Exception {
 		/** sleep for 1+ minutes to allow appd agent to flush its buffer */
-		doSleep(90000);
+		//doSleep(90000);
 		
 		/** we can add up to three summary goals for our test */
 		generator.addSummaryGoal(SUMMARY_INDEX.ONE, "95th", "95th % Goal is 550", metricTransaction.getPercentileValue(95), 550, 3, 10);
@@ -40,6 +40,10 @@ public class ReportGeneratorTest {
 		generator.addMetricTimeSeriesPlot(metricTransaction, METRIC_OPERATIONS.PCT_95);
 		generator.addMetricTimeSeriesPlot(metricStep1, METRIC_OPERATIONS.AVG);
 		generator.addMetricTimeSeriesPlot(metricStep2, METRIC_OPERATIONS.AVG);
+		
+		/** this will add the metrics to our test summary pie chart */
+		generator.addMetricSummaryPlot(metricTransaction, metricStep1, METRIC_OPERATIONS.AVG);
+		generator.addMetricSummaryPlot(metricTransaction, metricStep2, METRIC_OPERATIONS.AVG);
 
 		generator.generateReport();
 	}
@@ -47,7 +51,7 @@ public class ReportGeneratorTest {
 	@Test (invocationCount = 100)
 	public void simulateUnitTest() {
 		
-		int stepOneSleepCeiling = new Random().nextInt(400);
+		int stepOneSleepCeiling = new Random().nextInt(400) + 1;
 		int stepTwoSleepCeiling = new Random().nextInt(200) + stepOneSleepCeiling;
 		
 		/** time how long it takes to complete a full iteration, and also the sub-steps */
@@ -84,7 +88,7 @@ public class ReportGeneratorTest {
 	
 	private void doSleep(int maxSleepMillis) {
 		try {
-			Thread.sleep(new Random(maxSleepMillis).nextInt(maxSleepMillis));
+			Thread.sleep(new Random().nextInt(maxSleepMillis));
 		}catch (Exception e) {
 			e.printStackTrace();
 		}
