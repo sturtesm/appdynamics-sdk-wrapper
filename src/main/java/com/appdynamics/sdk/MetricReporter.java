@@ -11,8 +11,13 @@ public class MetricReporter extends AppDynamicsSDKWrapper {
 	
 	private Hashtable<String, Metric> metrics = new Hashtable<String, Metric> ();
 
+	/** the agent delegate that reports metrics */
+	IMetricAndEventReporter metricReporter = null;
+	
 	public MetricReporter() {
 		super();
+		
+		metricReporter = getMetricReporter();
 	}
 
 	@Override
@@ -28,19 +33,21 @@ public class MetricReporter extends AppDynamicsSDKWrapper {
 	 * @param value
 	 */
 	public void reportMetricInstance(String metricName, long value) {
-		
 		if (metricName == null || metricName.trim().length() <= 0) {
 			return;
 		}
 		
-		IMetricAndEventReporter metricReporter = getMetricReporter();
-
-		metricReporter.reportAverageMetric(metricName, value);
+		if (isEnabled()) {
+			metricReporter.reportAverageMetric(metricName, value);
+		}
 	}
 
 	public void reportSumMetric(String metricName, long metricValue) {
-		IMetricAndEventReporter metricReporter = getMetricReporter();
-
-		metricReporter.reportAverageMetric(metricName, metricValue);
+		if (metricName == null || metricName.trim().length() <= 0) {
+			return;
+		}
+		if (isEnabled()) {
+			metricReporter.reportAverageMetric(metricName, metricValue);
+		}
 	}
 }

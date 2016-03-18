@@ -7,35 +7,73 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.testng.Assert;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import com.appdynamics.apm.appagent.api.AgentDelegate;
+import com.appdynamics.apm.appagent.api.IMetricAndEventReporter;
 import com.appdynamics.sdk.EventReporter;
 import com.appdynamics.sdk.EventReporter.EVENT_TYPE;
 import com.appdynamics.sdk.Metric;
-import com.appdynamics.sdk.MetricReporter;
-import com.appdynamics.sdk.TransactionReporter;
 
 public class SDKWrapperTest {
-
+	private Date startTime = null;
 	private Logger logger = Logger.getLogger(SDKWrapperTest.class);
+	
+	@BeforeTest
+	public void setup() {
+		startTime = new Date();
+		
+		logger.info("Starting Test Now: " + startTime);
+	}
 
+	@AfterTest
+	public void shutdown() {
+		Date stopTime = new Date();
+		
+		logger.info("Closing Test Down Now: " + stopTime + ", Test Duration=" + 
+				((stopTime.getTime() - startTime.getTime()) / 1000) + " seconds"); 
+		
+		/** 
+		 * Sleeping for 2-minutes to allow 
+		 * AppDynamics to flush its metric and event buffer
+		 */
+		sleep(120000);
+	}
+	
+	//@Test (priority=1, invocationCount = 100)
+	public void directSDKTest() {
+		IMetricAndEventReporter metricReporter = 
+				AgentDelegate.getMetricAndEventPublisher();
+
+		for (int i = 1; i < 10; i++) {
+			metricReporter.reportAverageMetric("directSDKTest", i);
+			
+			sleep(new Random().nextInt(125) + 125);
+		}
+	}
+	
 	@Test (priority=1, invocationCount = 100)
 	public void metricAvgTest() {
-		Metric metric = new Metric("SampleUnitTest/Response_Time_ms", null);
-
-		for (int i = 1; i <= 100; i++) {
+		Metric metric = new Metric("MetricReporter/Response_Time_ms", null);
+		
+		IMetricAndEventReporter metricReporter = 
+				AgentDelegate.getMetricAndEventPublisher();
+		
+		for (int i = 1; i <= 1000; i++) {
 			metric.addObservation(i);
+			
+			metricReporter.reportAverageMetric("directSDKTest/Response_Time_ms", i);
+			
+			sleep(new Random().nextInt(1));
 		}
-
-		metric.report();
 
 		double percentile = metric.getPercentileValue(95);
 
-		Assert.assertTrue(new Double(percentile).intValue() == 95);
+		Assert.assertTrue(new Double(percentile).intValue() == 950);
 
 		metric.reportQuantile(95);
-
-		sleep(500);
 	}
 
 	//@Test (priority=1, invocationCount = 200)
@@ -43,14 +81,14 @@ public class SDKWrapperTest {
 		EventReporter wrapper = new EventReporter();
 		Map<String, String> map = new HashMap<String, String> ();
 
-		logger.debug("Running Test eventTest()");
+		//logger.debug("Running Test eventTest()");
 
 		map.put("key1", "value1");
 		map.put("key2", "value2");
 
 		wrapper.generateEvent("SampleUnitTest_Info_Event", map, EVENT_TYPE.INFO);
 
-		sleep(500);
+		sleep(100);
 	}
 
 	private void sleep(int delayMs) {
@@ -62,6 +100,7 @@ public class SDKWrapperTest {
 		}
 	}
 
+	/**
 	//@Test (priority=2, invocationCount = 25)
 	public void eventWarningTest() {
 		EventReporter wrapper = new EventReporter();
@@ -101,7 +140,6 @@ public class SDKWrapperTest {
 		wrapper.generateEvent("SampleUnitTest_Critical_Event", map, EVENT_TYPE.CRITICAL);
 	}
 
-
 	@Test (priority=2, invocationCount=100)	
 	public void bizTransactionTest() {
 		TransactionReporter wrapper = new TransactionReporter();
@@ -137,5 +175,5 @@ public class SDKWrapperTest {
 			metricWrapper.reportMetricInstance("metricTest_response_time", new Random().nextInt(1000));
 		}
 	}
-
+	*/
 }

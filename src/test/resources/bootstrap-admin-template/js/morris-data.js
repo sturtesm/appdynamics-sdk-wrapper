@@ -1,6 +1,6 @@
 $(function() {
 
-    Morris.Area({
+    Morris.Line({
         element: 'morris-area-chart',
         data: [{
             period: '2010 Q1',

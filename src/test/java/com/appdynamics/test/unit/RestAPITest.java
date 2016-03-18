@@ -7,9 +7,15 @@ import org.appdynamics.appdrestapi.data.Application;
 import org.appdynamics.appdrestapi.data.Applications;
 import org.appdynamics.appdrestapi.data.Event;
 import org.appdynamics.appdrestapi.data.Events;
+import org.appdynamics.appdrestapi.data.MetricData;
+import org.appdynamics.appdrestapi.data.MetricDatas;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import org.testng.log4testng.Logger;
+
+import com.appdynamics.sdk.Metric;
+
+import junit.framework.Assert;
 
 public class RestAPITest {
 	Logger logger = Logger.getLogger(getClass());
@@ -42,5 +48,41 @@ public class RestAPITest {
 			System.out.println("Found event:\n " + e);
 			logger.info("Found Event: " + e);
 		}
+	}
+	
+	@Test
+	public void getMetrics() {
+		
+		/** should pull data for the last 5-minutes */
+		Date stop = new Date();
+		Date start = new Date(stop.getTime() - 300000);
+		
+		String metricPath = 
+				"Application Infrastructure Performance|JUnitTest|Custom Metrics|MetricReporter/Response_Time_ms";
+		
+		Assert.assertNotNull(access);
+		
+		Metric metric = new Metric("MetricReporter/Response_Time_ms", null);
+		
+		for (int i = 0; i < 100; i++) {
+			metric.addObservation(i);
+		}
+		metric.reportQuantile(95);
+		
+		try {
+			/** give the agent time to push the data */
+			Thread.sleep(90000);
+		}catch (Exception e) { 
+			//stub 
+		}
+		
+		MetricDatas datas = access.getRESTMetricQueryCustom(
+				"JavaUnitTest", metricPath, start.getTime(), stop.getTime(), false);
+		
+		for (MetricData d : datas.getMetric_data()) {
+			System.out.println("Found Metric Data: " + d);
+		}
+				
+		Assert.assertNotNull(datas);
 	}
 }

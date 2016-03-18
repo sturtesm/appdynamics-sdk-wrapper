@@ -6,7 +6,10 @@ import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
+import com.appdynamics.sdk.MetricOperations.METRIC_OPERATIONS;
+
 public class Metric {
+	private static final String METRIC_PREFIX="SDK_METRIC";
 	private String metricName = null;
 
 	/** our unsorted observations */
@@ -26,6 +29,9 @@ public class Metric {
 	
 	/** a description of the units */
 	private String units = null;
+	
+	/** the reporter reports metrics to the SDK */
+	MetricReporter reporter = null;
 
 	/**
 	 * Construct a new Metric for observations, the units is a descriptor only and will not
@@ -35,8 +41,9 @@ public class Metric {
 	 * @param units
 	 */
 	public Metric(String name, String units) {
-		this.metricName = name;
+		this.metricName = METRIC_PREFIX + "/" + name;
 		this.units = units;
+		this.reporter = new MetricReporter();
 	}
 
 	/**
@@ -51,6 +58,8 @@ public class Metric {
 		setSum(observation);
 		
 		unsorted = true;
+		
+		reporter.reportMetricInstance(metricName, observation);
 	}
 
 	private void setSum(long observation) {
@@ -76,39 +85,6 @@ public class Metric {
 
 	private boolean isUnsorted() {
 		return this.unsorted;
-	}
-
-	/**
-	 * report the metrics we've observed to date, will result in a SUM, AVG, MIN, MAX and COUNT
-	 * for the metric reported.  If quantiles is non-null, then also reports a percentile metric
-	 * for all quantiles.
-	 * 
-	 */
-	public void report() {
-		MetricReporter reporter = new MetricReporter();
-
-		if (unsortedObservations == null || unsortedObservations.isEmpty()) {
-			return;
-		}
-
-		for (Double l : unsortedObservations) {
-			reporter.reportMetricInstance(metricName, l.longValue());
-		}
-	}
-
-	/**
-	 * report the metrics we've observed to date, will result in a SUM, AVG, MIN, MAX and COUNT
-	 * for the metric reported.  If quantiles is non-null, then also reports a percentile metric
-	 * for all quantiles.
-	 * 
-	 * @param quantiles list of percentile metrics to report for the observations, or NULL and no
-	 * percentiles will be reported. Quantiles should be non-floating point.
-	 */
-	public void evaluateAndReport(ArrayList<Long> quantiles) {
-		/** report the metric instances */
-		report();
-
-		reportQuantiles(quantiles);
 	}
 
 	/**
@@ -150,11 +126,21 @@ public class Metric {
 
 			for (Long d : quantiles) {
 				Double stat = p.evaluate(d);
-				String percentileMetricName = metricName +  "_" + d.intValue() + "_percentile";
+				String percentileMetricName = getPercentileMetricName(d.intValue());
 
 				reporter.reportMetricInstance(percentileMetricName, stat.longValue());
 			}
 		}		
+	}
+
+	/**
+	 * gets the metric name for a percentile metric
+	 * 
+	 * @param quantile
+	 * @return
+	 */
+	public String getPercentileMetricName(int quantile) {
+		return metricName +  "_" + quantile + "_percentile";
 	}
 
 	/**
@@ -219,6 +205,20 @@ public class Metric {
 
 	public long getMax() {
 		return max;
+	}
+	
+	public double getValue(METRIC_OPERATIONS operation) {
+		switch (operation) {
+		case AVG: return getAvg();
+		case MIN: return getMin();
+		case MAX: return getMax();
+		case COUNT: return getCount();
+		case SUM: return getSum();
+		case PCT_90: return getPercentileValue(90);
+		case PCT_95: return getPercentileValue(95);
+		case PCT_99: return getPercentileValue(99);
+		default: return Double.NaN;
+		}
 	}
 
 	public String getUnits() {
