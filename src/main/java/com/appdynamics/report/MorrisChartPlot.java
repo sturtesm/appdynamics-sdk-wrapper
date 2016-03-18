@@ -64,24 +64,60 @@ public class MorrisChartPlot {
 
 	}
 
-	private void addMetricToObservations(Metric m, Date metricTime, Long metricValue, METRIC_OPERATIONS op) {
+	protected void addMetricToObservations(Metric m, Date metricTime, Long metricValue, METRIC_OPERATIONS op) {
 		Long millisTimeKey = metricTime.getTime();
 
-		String metricName = getMetricName(m, op);
+		String metricName = getMetricName(m, op, true);
 
 		/** create a new observation at this time */
 		Observation observation = new Observation(
 				metricValue, metricName, op, metricTime);
 
-		if (!observations.containsKey(millisTimeKey)) {
+		if (!getObservations().containsKey(millisTimeKey)) {
 			ArrayList<Observation> timeObservations = new ArrayList<Observation> ();
 
 			/** add our list of observations to this time in the hash */
-			observations.put(millisTimeKey, timeObservations);
+			getObservations().put(millisTimeKey, timeObservations);
 		}
 
 		/** add this observation to the correct time period */
-		observations.get(millisTimeKey).add(observation);
+		getObservations().get(millisTimeKey).add(observation);
+	}
+	
+	/**
+	 * Parse the metric history into a json array
+	 * 
+	 * @param metric the metric we're parsing / adding
+	 * @param operation the operation we should apply to the metric
+	 * @param series the metric history / data
+	 * 
+	 * @return a JSON Array that will be added to our tet report
+	 */
+	protected void parseMetricHistoryToObservations(Metric m, METRIC_OPERATIONS op, MetricDatas metricDatas) {
+
+		/** iterate through the metric history, and add each observation to our list */
+		for (MetricData d : metricDatas.getMetric_data()) {
+			String frequency = d.getFrequency();
+
+			/** create our historical observations */
+			for (MetricValues mValues : d.getMetricValues()) {
+				ArrayList<MetricValue> mList = mValues.getMetricValue();
+
+				for (MetricValue mv : mList) {
+					Date metricTime = getMetricTime(mv.getStartTimeInMillis());
+					Long metricValue = getMetricValue(mv, op);
+
+					addMetricToObservations(m, metricTime, metricValue, op);
+				}
+			}
+		}
+
+		/** now get the latest observation as it most likely has not been persisted yet in AppD */
+		long metricValue = (long) m.getValue(op);
+		Date metricTime = getMetricTime(new Date().getTime());
+
+		addMetricToObservations(m, metricTime, metricValue, op);
+
 	}
 
 	/** adds a new metric to the time series that we can plot or report on */
@@ -93,13 +129,13 @@ public class MorrisChartPlot {
 
 		StringBuffer buffer = new StringBuffer ("[");
 
-		if (observations == null || observations.size() == 0) {
+		if (getObservations() == null || getObservations().size() == 0) {
 			return new String ("[]");
 		}
 
 		List<Long> keyList = new ArrayList<Long> ();
 
-		keyList.addAll(observations.keySet());
+		keyList.addAll(getObservations().keySet());
 
 		/** sort our list of keys */
 		Collections.sort(keyList);
@@ -110,7 +146,7 @@ public class MorrisChartPlot {
 		boolean firstMetric = true;
 
 		for (Long l : keyList) {
-			ArrayList<Observation> pointInTimeObservations = observations.get(l);
+			ArrayList<Observation> pointInTimeObservations = getObservations().get(l);
 
 			boolean addedTimePeriod = false;
 
@@ -167,7 +203,7 @@ public class MorrisChartPlot {
 		MetricDatas metrics = getMetricData(restHelper, metricPath);
 
 		for (MetricData d : metrics.getMetric_data()) {
-			logger.trace("Found Metric Data for (" + m.getMetricName() + ") \n" + d);
+			logger.debug("Found Metric Data for (" + m.getMetricName() + ") \n" + d);
 		}
 
 		return metrics;
@@ -184,7 +220,7 @@ public class MorrisChartPlot {
 		for (MetricDataSeries ms : series) {
 
 			/** includes logic to support getting the % metric name if needed */
-			String metricName = getMetricName(ms.getMetric(), ms.getOperation());
+			String metricName = getMetricName(ms.getMetric(), ms.getOperation(), true);
 
 			labels.add(sanitizeMetricName(metricName));
 		}
@@ -192,12 +228,12 @@ public class MorrisChartPlot {
 		return labels;
 	}
 
-	protected String getMetricName(Metric m, METRIC_OPERATIONS op) {
+	protected String getMetricName(Metric m, METRIC_OPERATIONS op, boolean pretty) {
 		if (op.isPercentileMetric()) {
-			return m.getPercentileMetricName((int) op.getQuantile());
+			return m.getPercentileMetricName((int) op.getQuantile(), pretty);
 		}
 		else {
-			return m.getMetricName();
+			return (pretty) ? m.getPrettyName() : m.getMetricName();
 		}
 	}
 
@@ -209,10 +245,7 @@ public class MorrisChartPlot {
 		 */
 		StringBuilder buf = new StringBuilder();
 
-		String metricName = m.getMetricName();
-
-		/** get the correct metric name, includes logic if this is a percentile metric */
-		metricName = getMetricName(m, op);
+		String metricName = getMetricName(m, op, false);
 
 		buf.append("Application Infrastructure Performance|");
 		buf.append(restHelper.getTier());
@@ -225,7 +258,7 @@ public class MorrisChartPlot {
 		return path;
 	}
 
-	private Date getMetricTime(long startTimeInMillis) {
+	protected Date getMetricTime(long startTimeInMillis) {
 		Calendar c = Calendar.getInstance();
 
 		/** set the time, round to the nearest minute */
@@ -236,7 +269,7 @@ public class MorrisChartPlot {
 		return c.getTime();
 	}
 
-	private Long getMetricValue(MetricValue mv, METRIC_OPERATIONS op) {
+	protected Long getMetricValue(MetricValue mv, METRIC_OPERATIONS op) {
 		/** by default we'll pick the average time */
 		long value = mv.getValue();
 
@@ -260,42 +293,7 @@ public class MorrisChartPlot {
 		return series;
 	}
 
-	/**
-	 * Parse the metric history into a json array
-	 * 
-	 * @param metric the metric we're parsing / adding
-	 * @param operation the operation we should apply to the metric
-	 * @param series the metric history / data
-	 * 
-	 * @return a JSON Array that will be added to our tet report
-	 */
-	protected void parseMetricHistoryToObservations(Metric m, METRIC_OPERATIONS op, MetricDatas metricDatas) {
 
-		/** iterate through the metric history, and add each observation to our list */
-		for (MetricData d : metricDatas.getMetric_data()) {
-			String frequency = d.getFrequency();
-
-			/** create our historical observations */
-			for (MetricValues mValues : d.getMetricValues()) {
-				ArrayList<MetricValue> mList = mValues.getMetricValue();
-
-				for (MetricValue mv : mList) {
-
-					Date metricTime = getMetricTime(mv.getStartTimeInMillis());
-					Long metricValue = getMetricValue(mv, op);
-
-					addMetricToObservations(m, metricTime, metricValue, op);
-				}
-			}
-		}
-
-		/** now get the latest observation as it most likely has not been persisted yet in AppD */
-		long metricValue = (long) m.getValue(op);
-		Date metricTime = getMetricTime(new Date().getTime());
-
-		addMetricToObservations(m, metricTime, metricValue, op);
-
-	}
 
 	protected String sanitizeMetricName(String name) {
 
@@ -303,6 +301,14 @@ public class MorrisChartPlot {
 		String s = name.replace("/", "_");
 
 		return s;
+	}
+
+	public Hashtable<Long, ArrayList<Observation>> getObservations() {
+		return observations;
+	}
+
+	public void setObservations(Hashtable<Long, ArrayList<Observation>> observations) {
+		this.observations = observations;
 	}
 
 }

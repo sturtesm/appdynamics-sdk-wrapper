@@ -126,7 +126,7 @@ public class Metric {
 
 			for (Long d : quantiles) {
 				Double stat = p.evaluate(d);
-				String percentileMetricName = getPercentileMetricName(d.intValue());
+				String percentileMetricName = getPercentileMetricName(d.intValue(), false);
 
 				reporter.reportMetricInstance(percentileMetricName, stat.longValue());
 			}
@@ -139,8 +139,13 @@ public class Metric {
 	 * @param quantile
 	 * @return
 	 */
-	public String getPercentileMetricName(int quantile) {
-		return metricName +  "_" + quantile + "_percentile";
+	public String getPercentileMetricName(int quantile, boolean pretty) {
+		if (pretty) {
+			return getPrettyName() + "_" + quantile + "_pct";
+		}
+		else {
+			return metricName +  "_" + quantile + "_percentile";
+		}
 	}
 
 	/**
@@ -170,6 +175,12 @@ public class Metric {
 
 	public String getMetricName() {
 		return metricName;
+	}
+	
+	public String getPrettyName() {
+		String s = getMetricName();
+		
+		return s.replace(METRIC_PREFIX + "/", "");
 	}
 	
 	/**

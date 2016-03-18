@@ -50,6 +50,9 @@ public class ReportGenerator {
 
 	/** the summary pie chart plot */
 	MorrisPieChart metricSummaryPlot = null;
+	
+	/** the metric table plot */
+	TimeSeriesMorrisTable metricTablePlot = null;
 
 	private AppdRESTHelper restHelper = null;
 
@@ -60,6 +63,7 @@ public class ReportGenerator {
 		this.metricHistorySeries = new TimeSeriesMetricPlot();
 		this.reportSummary = new ReportSummary();
 		this.metricSummaryPlot = new MorrisPieChart();
+		this.metricTablePlot = new TimeSeriesMorrisTable();
 
 		this.utils = new FileUtils();
 	}
@@ -142,6 +146,9 @@ public class ReportGenerator {
 			e.printStackTrace();
 		}
 
+		/** writes the time series table plot to out report */
+		template = metricTablePlot.writeMetricsToTemplate(template, restHelper);
+		
 		logger.info("Writing test report (appdynamics-unit-test-report.html) to " + targetOutputPath);
 
 		utils.writeReport(targetOutputPath, "appdynamics-unit-test-report.html", template);
@@ -194,9 +201,20 @@ public class ReportGenerator {
 	 * @param metricStep1
 	 * @param avg
 	 */
-	public void addMetricSummaryPlot(ResponseTimeMetric metricTransaction, 
-			ResponseTimeMetric metric, METRIC_OPERATIONS operation) 
+	public void addMetricSummaryPlot(ResponseTimeMetric metric, METRIC_OPERATIONS operation) 
 	{
 		metricSummaryPlot.addSummaryMetric(metric, operation);
+	}
+	
+	/**
+	 * Adds a metric to be summarized into the pie chart / plot.
+	 * 
+	 * @param metricTransaction
+	 * @param metricStep1
+	 * @param avg
+	 */
+	public void addMetricTablePlot(ResponseTimeMetric metric, METRIC_OPERATIONS operation) 
+	{
+		metricTablePlot.addMetricToTimeSeries(metric, operation);
 	}
 }

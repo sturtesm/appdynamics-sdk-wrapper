@@ -17,9 +17,9 @@ public class ReportGeneratorTest {
 	
 	ReportGenerator generator = null;
 	
-	ResponseTimeMetric metricTransaction = new ResponseTimeMetric("SampleUnitTest/TestCycle/Response_Time_ms", "ms");
-	ResponseTimeMetric metricStep1 = new ResponseTimeMetric("SampleUnitTest/StepOne/Response_Time_ms", "ms");
-	ResponseTimeMetric metricStep2 = new ResponseTimeMetric("SampleUnitTest/StepTwo/Response_Time_ms", "ms");
+	ResponseTimeMetric metricTransaction = new ResponseTimeMetric("TestCycle/Elapsed", "ms");
+	ResponseTimeMetric metricStep1 = new ResponseTimeMetric("Step1/Elapsed", "ms");
+	ResponseTimeMetric metricStep2 = new ResponseTimeMetric("Step2/Elapsed", "ms");
 	
 	@BeforeTest
 	public void testSetup() {
@@ -32,9 +32,9 @@ public class ReportGeneratorTest {
 		//doSleep(90000);
 		
 		/** we can add up to three summary goals for our test */
-		generator.addSummaryGoal(SUMMARY_INDEX.ONE, "95th", "95th % Goal is 550", metricTransaction.getPercentileValue(95), 550, 3, 10);
-		generator.addSummaryGoal(SUMMARY_INDEX.TWO, "Avg", "Avg (ms) Goal is 287.5", metricStep1.getAvg(), 50, 5, 10);
-		generator.addSummaryGoal(SUMMARY_INDEX.THREE, "Count", "Observations Goal is 10000", metricStep2.getCount(), 10000, 1, 2);
+		generator.addSummaryGoal(SUMMARY_INDEX.ONE, "95th", "95th % Goal is 550", (long)metricTransaction.getPercentileValue(95), 550, 90, 100);
+		generator.addSummaryGoal(SUMMARY_INDEX.TWO, "Avg", "Avg (ms) Goal is 287.5", metricStep1.getAvg(), 50, 50, 75);
+		generator.addSummaryGoal(SUMMARY_INDEX.THREE, "Count", "Observations Goal is 110", metricStep2.getCount(), 125, 15, 25);
 		
 		/** this will add the metrics to our time series plot */
 		generator.addMetricTimeSeriesPlot(metricTransaction, METRIC_OPERATIONS.PCT_95);
@@ -42,8 +42,13 @@ public class ReportGeneratorTest {
 		generator.addMetricTimeSeriesPlot(metricStep2, METRIC_OPERATIONS.AVG);
 		
 		/** this will add the metrics to our test summary pie chart */
-		generator.addMetricSummaryPlot(metricTransaction, metricStep1, METRIC_OPERATIONS.AVG);
-		generator.addMetricSummaryPlot(metricTransaction, metricStep2, METRIC_OPERATIONS.AVG);
+		generator.addMetricSummaryPlot(metricStep1, METRIC_OPERATIONS.AVG);
+		generator.addMetricSummaryPlot(metricStep2, METRIC_OPERATIONS.AVG);
+		
+		generator.addMetricTablePlot(metricTransaction, METRIC_OPERATIONS.MIN);
+		generator.addMetricTablePlot(metricTransaction, METRIC_OPERATIONS.AVG);
+		generator.addMetricTablePlot(metricTransaction, METRIC_OPERATIONS.PCT_95);
+		generator.addMetricTablePlot(metricTransaction, METRIC_OPERATIONS.MAX);
 
 		generator.generateReport();
 	}
@@ -61,7 +66,7 @@ public class ReportGeneratorTest {
 		
 		doStep(metricStep2, stepTwoSleepCeiling);
 		
-		doSleep(new Random().nextInt(450));
+		doSleep(new Random().nextInt(450) + 1);
 		
 		metricTransaction.stopTimer(true);
 	}

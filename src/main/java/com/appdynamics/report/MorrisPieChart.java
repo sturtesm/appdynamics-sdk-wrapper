@@ -47,7 +47,7 @@ public class MorrisPieChart extends MorrisChartPlot {
 				buffer.append("\n,{\n");
 			}
 
-			String name = super.getMetricName(mds.getMetric(), mds.getOperation());
+			String name = super.getMetricName(mds.getMetric(), mds.getOperation(), true);
 			long value = (long) mds.getMetric().getValue(mds.getOperation());
 			
 			buffer.append(String.format("label : \"%s\",\n", sanitizeMetricName(name)));
