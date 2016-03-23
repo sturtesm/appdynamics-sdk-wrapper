@@ -52,6 +52,8 @@ public class MorrisChartPlot {
 
 	public static final long ONE_DAY_MILLIS = 86400000;
 	
+	public static final long THREE_DAYS_MILLIS = ONE_DAY_MILLIS * 3;
+	
 	public Logger logger = Logger.getLogger(getClass());
 	
 	private ArrayList<MetricDataSeries> series = new ArrayList<MetricDataSeries> ();
@@ -181,7 +183,7 @@ public class MorrisChartPlot {
 	/** we'll get the last week of data, hard coded time frame for now */
 	private MetricDatas getMetricData(AppdRESTHelper restHelper, String metricPath) {
 		Date stop = new Date();
-		Date start = new Date(stop.getTime() - ONE_DAY_MILLIS);
+		Date start = new Date(stop.getTime() - THREE_DAYS_MILLIS);
 
 		/** get metric data for the last day, don't rollup the results */
 		return restHelper.getMetricData(metricPath, start, stop, false);	

@@ -29,7 +29,7 @@ public class ReportGeneratorTest {
 	@AfterTest
 	public void generateTestReport() throws Exception {
 		/** sleep for 1+ minutes to allow appd agent to flush its buffer */
-		//doSleep(90000);
+		doSleep(90000);
 		
 		/** we can add up to three summary goals for our test */
 		generator.addSummaryGoal(SUMMARY_INDEX.ONE, "95th", "95th % Goal is 550", (long)metricTransaction.getPercentileValue(95), 550, 90, 100);
@@ -77,7 +77,7 @@ public class ReportGeneratorTest {
 		quantiles.add(90l);
 		quantiles.add(95l);
 		
-		/** report the percentil metrics as part of the test */
+		/** report the percentile metrics as part of the test */
 		metricTransaction.reportQuantiles(quantiles);
 		metricStep1.reportQuantiles(quantiles);
 		metricStep2.reportQuantiles(quantiles);
