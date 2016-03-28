@@ -6,6 +6,7 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.appdynamics.appdrestapi.RESTAccess;
+import org.appdynamics.appdrestapi.data.Events;
 import org.appdynamics.appdrestapi.data.MetricDatas;
 
 public class AppdRESTHelper {
@@ -19,6 +20,7 @@ public class AppdRESTHelper {
 	private String password = null;
 	private String application = null;
 	private String tier = null;
+	private Boolean useSSL = false;
 
 	private boolean isInit = false;
 	private boolean disabled = false;
@@ -33,6 +35,30 @@ public class AppdRESTHelper {
 		return application;
 	}
 
+	
+	/** 
+	 * returns a list of all the custom events with the specified severity between
+	 * the time frames provided.
+	 * 
+	 * @param startTime
+	 * @param stopTime
+	 * @param severity
+	 * 
+	 * @return
+	 */
+	public Events getCustomEvents(Date startTime, Date stopTime, String severity) {
+		/** no-op if already initialized */
+		initializeRestHelper();
+		
+		if (! disabled ) {
+			return restAccess.getEvents(application, "CUSTOM", severity, 
+					startTime.getTime(), stopTime.getTime());
+		}
+		else {
+			return null;
+		}
+	}
+	
 	/**
 	 * get the metric data between the time frames
 	 * 
@@ -61,7 +87,8 @@ public class AppdRESTHelper {
 
 		if (!isInit && !disabled) {
 			try {
-				restAccess = new RESTAccess(hostName, port, false, username, password);
+				
+				restAccess = new RESTAccess(hostName, port, useSSL, username, password);
 			}
 			catch (Exception e) {
 				logger.error("Error initialzing REST Helper, historical data access is disabled.");
@@ -102,6 +129,7 @@ public class AppdRESTHelper {
 			password = loadProperty("appdynamics.rest.password", true);
 			application = loadProperty("appdynamics.rest.application", true);
 			tier = loadProperty("appdynamics.rest.tier", true);
+			useSSL = new Boolean(loadProperty("appdynamics.rest.ssl", true));
 
 		}catch (Exception e) {
 			logger.error("Error loading appdynamics properties, REST access to historical data will be disabled.");

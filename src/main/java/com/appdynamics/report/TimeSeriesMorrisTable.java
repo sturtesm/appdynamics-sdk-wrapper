@@ -2,6 +2,7 @@ package com.appdynamics.report;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -9,13 +10,11 @@ import org.appdynamics.appdrestapi.data.MetricData;
 import org.appdynamics.appdrestapi.data.MetricDatas;
 import org.appdynamics.appdrestapi.data.MetricValue;
 import org.appdynamics.appdrestapi.data.MetricValues;
-import org.json.simple.JSONArray;
 
-import com.appdynamics.report.MorrisChartPlot.MetricDataSeries;
 import com.appdynamics.rest.AppdRESTHelper;
 import com.appdynamics.sdk.Metric;
-import com.appdynamics.sdk.Observation;
 import com.appdynamics.sdk.MetricOperations.METRIC_OPERATIONS;
+import com.appdynamics.sdk.Observation;
 
 import edu.emory.mathcs.backport.java.util.Collections;
 
@@ -37,7 +36,14 @@ public class TimeSeriesMorrisTable extends MorrisChartPlot {
 		keyList.addAll(getObservations().keySet());
 
 		/** sort our list of keys */
-		Collections.sort(keyList);
+		Collections.sort(keyList, new Comparator<Long> () {
+			
+			public int compare(Long o1, Long o2) {
+				/** sort in descending order */
+				return (-1 * o1.compareTo(o2));
+			}
+			
+		});
 
 		/** expected datetime format: 2012-02-24 15:00 */
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");

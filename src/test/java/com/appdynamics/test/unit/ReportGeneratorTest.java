@@ -24,12 +24,15 @@ public class ReportGeneratorTest {
 	@BeforeTest
 	public void testSetup() {
 		generator = new ReportGenerator("./target/test-classes/bootstrap-admin-template", "appd-unit-test-report");
+		
+		/** start the test timer */
+		generator.startTest();
 	}
 	
 	@AfterTest
 	public void generateTestReport() throws Exception {
-		/** sleep for 1+ minutes to allow appd agent to flush its buffer */
-		doSleep(90000);
+		
+		generator.stopTest();
 		
 		/** we can add up to three summary goals for our test */
 		generator.addSummaryGoal(SUMMARY_INDEX.ONE, "95th", "95th % Goal is 550", (long)metricTransaction.getPercentileValue(95), 550, 90, 100);
@@ -51,9 +54,13 @@ public class ReportGeneratorTest {
 		generator.addMetricTablePlot(metricTransaction, METRIC_OPERATIONS.MAX);
 
 		generator.generateReport();
+		
+		/** sleep for 1+ minutes to allow appd agent to flush its buffer */
+		doSleep(90000);
 	}
 	
-	@Test (invocationCount = 100)
+	@Test (invocationCount = 10//
+			)
 	public void simulateUnitTest() {
 		
 		int stepOneSleepCeiling = new Random().nextInt(400) + 1;
@@ -66,7 +73,7 @@ public class ReportGeneratorTest {
 		
 		doStep(metricStep2, stepTwoSleepCeiling);
 		
-		doSleep(new Random().nextInt(450) + 1);
+		doSleepRandom(new Random().nextInt(450) + 1);
 		
 		metricTransaction.stopTimer(true);
 	}
@@ -86,14 +93,22 @@ public class ReportGeneratorTest {
 	private void doStep(ResponseTimeMetric metric, int maxSleepMillis) {
 		metric.startTimer();
 		
-		doSleep(maxSleepMillis);
+		doSleepRandom(maxSleepMillis);
 		
 		metric.stopTimer(true);
 	}
 	
-	private void doSleep(int maxSleepMillis) {
+	private void doSleepRandom(int maxSleepMillis) {
 		try {
 			Thread.sleep(new Random().nextInt(maxSleepMillis));
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void doSleep(int millis) {
+		try {
+			Thread.sleep(millis);
 		}catch (Exception e) {
 			e.printStackTrace();
 		}

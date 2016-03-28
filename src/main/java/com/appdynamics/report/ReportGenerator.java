@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 
 import org.apache.log4j.Logger;
 
@@ -55,6 +56,10 @@ public class ReportGenerator {
 	TimeSeriesMorrisTable metricTablePlot = null;
 
 	private AppdRESTHelper restHelper = null;
+	
+	/** test start / stop times */
+	private Date testStart = null;
+	private Date testStop = null;
 
 	public ReportGenerator(String reportTemplateSourcePath, String reportOutputPath) {
 		this.templateSource = (reportTemplateSourcePath == null) ? "./bootstrap-admin-template" : reportTemplateSourcePath;
@@ -66,8 +71,23 @@ public class ReportGenerator {
 		this.metricTablePlot = new TimeSeriesMorrisTable();
 
 		this.utils = new FileUtils();
+		this.testStart = new Date();
 	}
 
+	/**
+	 * mark the start of the test
+	 */
+	public void startTest() {
+		testStart = new Date();
+	}
+
+	/** 
+	 * mark the stop of the test
+	 */
+	public void stopTest() {
+		testStop = new Date();
+	}
+	
 	public void addMetricTimeSeriesPlot(Metric metric, METRIC_OPERATIONS operation) throws Exception {
 
 		if (! init ) {
@@ -112,13 +132,19 @@ public class ReportGenerator {
 	 * @throws Exception
 	 */
 	public void generateReport() throws Exception {
+		
+		if (testStop == null) {
+			stopTest();
+		}
+		
 		if (! init ) {
 			initialize();
 		}
+		
 
 		/** ingest the template file from the destination path */
 		String template = 
-				utils.readFile(utils.getDestination(), "unitTestReport_template.html");
+				utils.readFile(utils.getDestination(), "templates/unitTestReport_template.html");
 
 		if (template == null) {
 			throw new Exception ("Error reading report template, template == null");
@@ -128,6 +154,9 @@ public class ReportGenerator {
 
 		/** adds the top section, the goals and progress against goals */
 		template = reportSummary.addSummarySection(template);
+		
+		/** adds the event notification and timeline summary */
+		template = addEventTimeline(template);
 
 		try {
 			/** adds the metrics in a timeseries form to the chart */
@@ -152,6 +181,17 @@ public class ReportGenerator {
 		logger.info("Writing test report (appdynamics-unit-test-report.html) to " + targetOutputPath);
 
 		utils.writeReport(targetOutputPath, "appdynamics-unit-test-report.html", template);
+	}
+
+	private String addEventTimeline(String template) {
+		/** report the this test as an event in appdynamics */
+		TestSummaryEvent event = 
+				new TestSummaryEvent(testStart, testStop, reportSummary);
+		
+		event.reportTestEvent();
+		template = event.insertResponsiveTimeline(restHelper, template);
+		
+		return template;
 	}
 
 	/**

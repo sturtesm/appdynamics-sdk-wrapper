@@ -52,7 +52,7 @@ public class TimeSeriesMetricPlot extends MorrisChartPlot {
 			updatedTemplate = updatedTemplate.replace("$morris_area_data_placeholder", metrics);
 			updatedTemplate = updatedTemplate.replace("$morris_area_ykeys_placeholder", metricLabels.toJSONString());
 			
-			logger.info("Just created the following JSon "
+			logger.trace("Just created the following JSon "
 					+ "from our metrics history: \n" + metrics);
 		}
 		

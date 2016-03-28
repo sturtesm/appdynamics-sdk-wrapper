@@ -1,18 +1,23 @@
 package com.appdynamics.report;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
 
 import com.appdynamics.report.ReportGenerator.SUMMARY_INDEX;
 
 public class ReportSummary {
 	
-	private final static String FA_CHECK="fa-check-circle-o";
-	private final static String FA_WARNING="fa-exclamation-triangle";
-	private final static String FA_CRITICAL="fa-times-circle";
+	public enum TEST_STATUS { NORMAL, WARNING, CRITICAL };
 	
-	private final static String BS_PANEL_CRITICAL="panel-red";
-	private final static String BS_PANEL_WARNING="panel-yellow";
-	private final static String BS_PANEL_GREEN="panel-green";
+	public final static String FA_CHECK="fa-check-circle-o";
+	public final static String FA_WARNING="fa-exclamation-triangle";
+	public final static String FA_CRITICAL="fa-times-circle";
+	
+	public final static String BS_PANEL_CRITICAL="panel-red";
+	public final static String BS_PANEL_WARNING="panel-yellow";
+	public final static String BS_PANEL_GREEN="panel-green";
 
 	private Hashtable<SUMMARY_INDEX, SummaryMetric> goalSummary = new Hashtable<SUMMARY_INDEX, SummaryMetric> ();
 
@@ -178,5 +183,70 @@ public class ReportSummary {
 		double allowance = (sm.getPercentWarnTolerance() / 100.00d) * goal;
 		
 		return (allowance < Math.abs(value - goal));
+	}
+	
+	/**
+	 * Based on the goals set, return the state of the test.  The state of the test will be determined
+	 * by the most critical state of the {@link #goalSummary} summary goals.
+	 * 
+	 * @return TEST_STATUS
+	 */
+	public TEST_STATUS getTestStatus() {
+		TEST_STATUS status = TEST_STATUS.NORMAL;
+		
+		if (goalSummary == null || goalSummary.size() <= 0) {
+			return status;
+		}
+		
+		Iterator<SummaryMetric> c = goalSummary.values().iterator();
+		
+		while (c.hasNext()) {
+			SummaryMetric sm = c.next();
+			
+			if (isWarning(sm)) {
+				status = TEST_STATUS.WARNING;
+			}
+			if (isCritical(sm)) {
+				return TEST_STATUS.CRITICAL;
+			}
+		}
+				
+		return status;
+	}
+	
+	
+	public List<String> getGoalStatusSummary() {
+		 List<String> description = new ArrayList<String> ();
+		 
+		 if (goalSummary == null) {
+			 return description;
+		 }
+		 
+		 Iterator<SummaryMetric> i = goalSummary.values().iterator();
+		 
+		 while (i.hasNext()) {
+			 SummaryMetric sm = i.next();
+			 
+			 getTestStatus(sm);
+			 
+			 String d = String.format("%s: %s", 
+					 getTestStatus(sm).toString(), sm.getDescription());
+			 
+			 description.add(d);
+		 }
+		 
+		 return description;
+	}
+
+	private TEST_STATUS getTestStatus(SummaryMetric sm) {
+		if (isWarning(sm)) {
+			return TEST_STATUS.WARNING;
+		}
+		else if (isCritical(sm)) {
+			return TEST_STATUS.CRITICAL;
+		}
+		else {
+			return TEST_STATUS.NORMAL;
+		}
 	}
 }

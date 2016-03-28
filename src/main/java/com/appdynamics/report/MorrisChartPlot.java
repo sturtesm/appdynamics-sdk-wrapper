@@ -183,7 +183,7 @@ public class MorrisChartPlot {
 	/** we'll get the last week of data, hard coded time frame for now */
 	private MetricDatas getMetricData(AppdRESTHelper restHelper, String metricPath) {
 		Date stop = new Date();
-		Date start = new Date(stop.getTime() - THREE_DAYS_MILLIS);
+		Date start = new Date(stop.getTime() - ONE_DAY_MILLIS);
 
 		/** get metric data for the last day, don't rollup the results */
 		return restHelper.getMetricData(metricPath, start, stop, false);	
@@ -205,7 +205,7 @@ public class MorrisChartPlot {
 		MetricDatas metrics = getMetricData(restHelper, metricPath);
 
 		for (MetricData d : metrics.getMetric_data()) {
-			logger.debug("Found Metric Data for (" + m.getMetricName() + ") \n" + d);
+			logger.trace("Found Metric Data for (" + m.getMetricName() + ") \n" + d);
 		}
 
 		return metrics;
@@ -255,7 +255,7 @@ public class MorrisChartPlot {
 
 		String path = buf.toString();
 
-		logger.debug("Built metric path " + buf + " for metric " + m.getMetricName());
+		logger.trace("Built metric path " + buf + " for metric " + m.getMetricName());
 
 		return path;
 	}

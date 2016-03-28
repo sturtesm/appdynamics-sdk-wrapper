@@ -76,7 +76,7 @@ public class SDKWrapperTest {
 		metric.reportQuantile(95);
 	}
 
-	//@Test (priority=1, invocationCount = 200)
+	@Test (priority=1, invocationCount = 5)
 	public void eventInfoTest() {
 		EventReporter wrapper = new EventReporter();
 		Map<String, String> map = new HashMap<String, String> ();
