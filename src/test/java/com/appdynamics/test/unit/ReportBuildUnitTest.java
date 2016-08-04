@@ -3,6 +3,7 @@ package com.appdynamics.test.unit;
 import java.io.File;
 import java.nio.file.Paths;
 
+import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -14,8 +15,13 @@ public class ReportBuildUnitTest {
 	private FileUtils utils = null;
 	private String reportTemplate = null;
 	
+	private Logger logger = Logger.getLogger(ReportBuildUnitTest.class);
+	
 	@BeforeTest
 	public void testRecursiveJarCopy() throws Exception {
+		
+		logger.info("[TEST] testRecursiveJarCopy()");
+		
 		utils = new FileUtils();
 		
 		String resourceName = "./target/test-classes/bootstrap-admin-template";
@@ -25,14 +31,21 @@ public class ReportBuildUnitTest {
 	
 	@Test
 	public void readTemplate() throws Exception {
+		
+		logger.info("[TEST] readTemplate()");
+
+		
 		reportTemplate = 
-				utils.readFile(utils.getDestination(), "unitTestReport_template.html");
+				utils.readFile(utils.getDestination(), "templates/unitTestReport_template.html");
 		
 		Assert.assertNotNull (reportTemplate != null, "Error reading template");
 	}
 	
 	@Test (dependsOnMethods = {"readTemplate"})
 	public void metricAvgTest() {
+		
+		logger.info("[TEST] metricAvgTest()");
+		
 		Metric metricOne = new Metric("SampleUnitTest/MetricOne/Response_Time_ms", null);
 		
 
@@ -53,6 +66,8 @@ public class ReportBuildUnitTest {
 	@Test (dependsOnMethods = {"metricAvgTest"}) 
 	public void writeReport() throws Exception 
 	{
+		logger.info("[TEST] writeReport()");
+		
 		String reportName = "unitTestReport.html";
 		
 		assert (reportTemplate != null);
@@ -64,6 +79,6 @@ public class ReportBuildUnitTest {
 		
 		Assert.assertTrue(new File(s).exists() == true, "Error validating that file " + s + " exists.");
 		
-		System.out.println("Wrote " + s + " unit test report");
+		logger.info("Wrote " + s + " unit test report");
 	}
 }

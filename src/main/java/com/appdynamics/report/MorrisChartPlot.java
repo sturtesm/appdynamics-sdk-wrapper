@@ -3,6 +3,7 @@ package com.appdynamics.report;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
@@ -19,7 +20,6 @@ import com.appdynamics.sdk.Metric;
 import com.appdynamics.sdk.MetricOperations.METRIC_OPERATIONS;
 import com.appdynamics.sdk.Observation;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 
 public class MorrisChartPlot {
 
